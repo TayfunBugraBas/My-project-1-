@@ -1,5 +1,6 @@
 using System;
 using System.Collections.Generic;
+using System.Linq;
 using UnityEngine;
 using UnityEngine.InputSystem;
 using UnityEngine.VFX;
@@ -15,6 +16,9 @@ namespace _Game.Scripts.Ahmet
 
         private List<Vector3> _positionList = new List<Vector3>();
         private List<VisualEffect> _vfxList = new List<VisualEffect>();
+        private Dictionary<string, VisualEffect> _vfxDict = new Dictionary<string, VisualEffect>();
+
+
         private VisualEffect _currentVFX;
         private Texture2D _texture;
         private Color[] _positions;
@@ -37,8 +41,8 @@ namespace _Game.Scripts.Ahmet
         [SerializeField] private float _minRadius = 1f;
         [SerializeField] private int _pointsPerScan = 100;
         [SerializeField] private float _range = 10f;
-        [SerializeField] public Color _defaultColor;
-        [SerializeField] public Color _tag1Color;
+        [SerializeField, ColorUsage(true, true)] public Color _defaultColor;
+        [SerializeField, ColorUsage(true, true)] public Color _tag1Color;
         [SerializeField] public Color _tag2Color;
 
         [SerializeField] private int resolution = 16000;
@@ -115,38 +119,59 @@ namespace _Game.Scripts.Ahmet
         }
 
         [ContextMenu("Change Color")]
-        public void ChangeColorVFX()
+        public void ChangeColorVFX(string objTag)
         {
             _createNewVFX = true;
-            CreateNewVisualEffect();
-            _currentVFX.SetVector4("ParticleColor", lastColor);
+            CreateNewVisualEffect(objTag);
+            switch (objTag)
+            {
+                case "terrain":
+                    _currentVFX.SetVector4("ParticleColor", _defaultColor);
+                    break;
+                case "tree":
+                    _currentVFX.SetVector4("ParticleColor", _tag1Color);
+                    break;
+                default:
+                    Debug.Log("Null Exception");
+                    break;
+            }
         }
         
-        private void CreateNewVisualEffect() 
+        
+        private void CreateNewVisualEffect(string objTag = "terrain") 
         {
-       
             if (!_createNewVFX) return;
-        
-        
-            _vfxList.Add(_currentVFX);
-        
-        
-            _currentVFX = Instantiate(_vfxPrefab, transform.position, Quaternion.identity, _vfxContainer.transform);
-            _currentVFX.SetUInt(RESOLUTION_PARAMETER_NAME, (uint)resolution);
-        
-        
-        
-            _texture = new Texture2D(resolution, resolution, TextureFormat.RGBAFloat, false);
-        
-        
-            _positions = new Color[resolution * resolution];
-        
-        
-            _positionList.Clear();
-        
-    
 
-            _createNewVFX = false;
+            foreach (var vfx in _vfxDict)
+            {
+                Debug.Log($"VFX ?? ** {vfx.Key} - {vfx.Value}");
+            }
+            
+            if (_vfxDict.ContainsKey(objTag))
+            {
+                if (_vfxDict.TryGetValue(objTag, out var value))
+                {
+                    _currentVFX = value;
+                }
+            }
+            else
+            {
+                //_vfxList.Add(_currentVFX);
+
+                _currentVFX = Instantiate(_vfxPrefab, transform.position, Quaternion.identity, _vfxContainer.transform);
+                
+                _currentVFX.SetUInt(RESOLUTION_PARAMETER_NAME, (uint)resolution);
+                
+                _texture = new Texture2D(resolution, resolution, TextureFormat.RGBAFloat, false);
+                
+                _positions = new Color[resolution * resolution];
+
+                _positionList.Clear();
+                
+                _vfxDict.Add(objTag, _currentVFX);
+
+                _createNewVFX = false;
+            }
         }
 
         private void Scan()
@@ -170,7 +195,7 @@ namespace _Game.Scripts.Ahmet
                     
                         if (_positionList.Count < resolution * resolution)
                         {
-                       
+                      
                             _positionList.Add(hit.point);
                             _lineRenderer.enabled = true;
                             _lineRenderer.SetPositions(new[]
@@ -179,13 +204,14 @@ namespace _Game.Scripts.Ahmet
                                 hit.point
                             });
                        
-                        
+                            Debug.Log(hit.transform.tag);
+                            ChangeColorVFX(hit.transform.tag);
+
                         }
                     
                         else
                         {
-                            _createNewVFX = true;
-                            CreateNewVisualEffect();
+                            ChangeColorVFX(hit.transform.tag);
                             break;
                         }
                     } 
