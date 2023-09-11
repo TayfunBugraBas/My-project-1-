@@ -14,14 +14,12 @@ namespace _Game.Scripts.Ahmet
         private InputAction _fire;
         private InputAction _changeRadius;
 
-        private List<Vector3> _positionList = new List<Vector3>();
         private List<VisualEffect> _vfxList = new List<VisualEffect>();
-        private Dictionary<string, VisualEffect> _vfxDict = new Dictionary<string, VisualEffect>();
+        private Dictionary<Contructor, VisualEffect> _vfxDict = new Dictionary<Contructor, VisualEffect>();
 
 
         private VisualEffect _currentVFX;
         private Texture2D _texture;
-        private Color[] _positions;
         private bool _createNewVFX;
 
         private LineRenderer _lineRenderer;
@@ -58,8 +56,8 @@ namespace _Game.Scripts.Ahmet
             _lineRenderer = GetComponent<LineRenderer>();
             _lineRenderer.enabled = false;
             _createNewVFX = true;
-            CreateNewVisualEffect();
-            ApplyPositions();
+            //CreateNewVisualEffect();
+            //ApplyPositions();
         }
         
         private void FixedUpdate()
@@ -79,10 +77,10 @@ namespace _Game.Scripts.Ahmet
             }
         }
         
-        private void ApplyPositions()
+        private void ApplyPositions(Contructor contructor)
         {
         
-            Vector3[] pos = _positionList.ToArray();
+            Vector3[] pos = contructor.colorPos.ToArray();
         
         
             Vector3 vfxPos = _currentVFX.transform.position;
@@ -106,11 +104,11 @@ namespace _Game.Scripts.Ahmet
                 {
                     data = new Color(0, 0, 0, 0);
                 }
-                _positions[i] = data;
+                contructor.color[i] = data;
             }
         
         
-            _texture.SetPixels(_positions);
+            _texture.SetPixels(contructor.color);
             _texture.Apply();
         
         
@@ -119,37 +117,22 @@ namespace _Game.Scripts.Ahmet
         }
 
         [ContextMenu("Change Color")]
-        public void ChangeColorVFX(string objTag)
+        public void ChangeColorVFX(string objTag, Contructor contructor)
         {
             _createNewVFX = true;
-            CreateNewVisualEffect(objTag);
-            switch (objTag)
-            {
-                case "terrain":
-                    _currentVFX.SetVector4("ParticleColor", _defaultColor);
-                    break;
-                case "tree":
-                    _currentVFX.SetVector4("ParticleColor", _tag1Color);
-                    break;
-                default:
-                    Debug.Log("Null Exception");
-                    break;
-            }
+            CreateNewVisualEffect(objTag, contructor);
+            _currentVFX.SetVector4("ParticleColor", contructor.constructorColor);
+            ApplyPositions(contructor);
+
         }
         
-        
-        private void CreateNewVisualEffect(string objTag = "terrain") 
+        private void CreateNewVisualEffect(string objTag, Contructor contructor) 
         {
             if (!_createNewVFX) return;
-
-            foreach (var vfx in _vfxDict)
-            {
-                Debug.Log($"VFX ?? ** {vfx.Key} - {vfx.Value}");
-            }
             
-            if (_vfxDict.ContainsKey(objTag))
+            if (_vfxDict.ContainsKey(contructor))
             {
-                if (_vfxDict.TryGetValue(objTag, out var value))
+                if (_vfxDict.TryGetValue(contructor, out var value))
                 {
                     _currentVFX = value;
                 }
@@ -164,16 +147,18 @@ namespace _Game.Scripts.Ahmet
                 
                 _texture = new Texture2D(resolution, resolution, TextureFormat.RGBAFloat, false);
                 
-                _positions = new Color[resolution * resolution];
+                contructor.color = new Color[resolution * resolution];
 
-                _positionList.Clear();
+                contructor.colorPos.Clear();
                 
-                _vfxDict.Add(objTag, _currentVFX);
+                _vfxDict.Add(contructor, _currentVFX);
 
                 _createNewVFX = false;
             }
         }
 
+        private string lastScanTag = string.Empty;
+        
         private void Scan()
         {
             // only call if button is pressed
@@ -191,12 +176,24 @@ namespace _Game.Scripts.Ahmet
                 
                     if (Physics.Raycast(transform.position, dir, out RaycastHit hit, _range, _layerMask))
                     {
+                        var constructor = hit.transform.GetComponent<Contructor>();
+                        
+                        /*
+                        if (!hit.transform.CompareTag(lastScanTag))
+                        {
+                            lastScanTag = hit.transform.tag;
+                            ChangeColorVFX(lastScanTag);
+                            ApplyPositions();
+                            _positionList.Clear();
+                        }
+                        */
+                        
                         Debug.DrawRay(transform.position, dir * hit.distance, Color.green);
                     
-                        if (_positionList.Count < resolution * resolution)
+                        if (constructor.colorPos.Count < resolution * resolution)
                         {
                       
-                            _positionList.Add(hit.point);
+                            constructor.colorPos.Add(hit.point);
                             _lineRenderer.enabled = true;
                             _lineRenderer.SetPositions(new[]
                             {
@@ -205,13 +202,13 @@ namespace _Game.Scripts.Ahmet
                             });
                        
                             Debug.Log(hit.transform.tag);
-                            ChangeColorVFX(hit.transform.tag);
+                            ChangeColorVFX(hit.transform.tag, constructor);
 
                         }
                     
                         else
                         {
-                            ChangeColorVFX(hit.transform.tag);
+                            ChangeColorVFX(hit.transform.tag, constructor);
                             break;
                         }
                     } 
@@ -220,7 +217,6 @@ namespace _Game.Scripts.Ahmet
                         Debug.DrawRay(transform.position, dir * _range, Color.red);
                     }
                 } 
-                ApplyPositions();
             } 
             else
             {
