@@ -7,9 +7,10 @@ public class CubeInteract : MonoBehaviour, IInteractable
     [SerializeField] private string _prompt;
     public string InteractionPrompt => _prompt;
 
-    public bool Interact(Interactor interactor)
+    public bool Interact(Interactor interactor,GameObject gameObject)
     {
-      Debug.Log("etkileşime girdi");
+      Debug.Log(_prompt);
+      Destroy(gameObject);
       return true;
     }
 }

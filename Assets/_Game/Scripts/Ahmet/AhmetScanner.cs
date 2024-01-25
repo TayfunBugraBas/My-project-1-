@@ -188,7 +188,7 @@ namespace _Game.Scripts.Ahmet
                         }
                         */
                         
-                        Debug.DrawRay(transform.position, dir * hit.distance, Color.green);
+                       // Debug.DrawRay(transform.position, dir * hit.distance, Color.green);
                     
                         if (constructor.colorPos.Count < resolution * resolution)
                         {
@@ -214,7 +214,7 @@ namespace _Game.Scripts.Ahmet
                     } 
                     else
                     {
-                        Debug.DrawRay(transform.position, dir * _range, Color.red);
+                        //Debug.DrawRay(transform.position, dir * _range, Color.red);
                     }
                 } 
             } 

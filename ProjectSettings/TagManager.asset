@@ -6,6 +6,12 @@ TagManager:
   tags:
   - tree
   - terrain
+  - cave
+  - mantar1
+  - mantar2
+  - mantar3
+  - sarkit1
+  - sarkit2
   layers:
   - Default
   - TransparentFX
